@@ -1,0 +1,46 @@
+\documentclass{article}
+
+% -------------- PACOTE GERAL -------------- %
+\usepackage{helper/helper}
+
+% -------------- CONFIGURACOES DA BIBLIOGRAFIA -------------- %
+\addbibresource{bibliografia.bib}
+
+% -------------- TITULO E INFORMACOES -------------- %
+\title{Modelo para relatórios e afins}
+\author{pão}
+\date{12 de dezembro de 2023}
+
+% -------------- DOCUMENTO -------------- %
+\begin{document}
+\maketitle
+
+% Resumo / Abstract
+\input{secoes/resumo}
+\pagebreak
+
+% Sumario
+\tableofcontents
+\pagebreak
+
+% -------------- SECOES -------------- %
+% Introducao
+\input{secoes/introducao}
+\pagebreak 
+
+% Secao de exemplo
+\part{Início}
+\section{Teste}
+oie \cite{Volchan:2007}.
+\begin{equation}
+    \prodint{u}{v}
+\end{equation}
+
+% capitulo 1
+\input{secoes/cap1}
+\pagebreak 
+
+% -------------- BIBLIOGRAFIA -------------- %
+\printbibliography
+
+\end{document}

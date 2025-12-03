@@ -1,0 +1,89 @@
+% Identificacao
+% O pacote se identifica e a versao de LaTeX necessaria
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{helper}[2023/12/11 Helper geral]
+
+% Gerais
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[brazilian]{babel}
+\RequirePackage{graphicx} % Para figuras
+\RequirePackage{color} % Fontes coloridas
+\RequirePackage{float}
+\RequirePackage{nonfloat}
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage{fancyhdr}
+\RequirePackage[symbol]{footmisc}
+\RequirePackage{enumerate}
+\RequirePackage{setspace}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{csquotes}
+
+% Computacao
+\RequirePackage{verbatim}
+\RequirePackage{textcomp}
+\RequirePackage{listings}
+\RequirePackage{minted}
+
+% Pacotes necessarios e definicioes preliminares
+\RequirePackage{bm} % 'Bold" em equacoes
+\RequirePackage{amssymb, amsmath, amsfonts} % Mais simbolos e equacoes
+\RequirePackage{mathtools}
+\RequirePackage{mathrsfs}
+\RequirePackage{xfrac}
+\RequirePackage{cancel}
+\RequirePackage{amsthm}
+\RequirePackage[math]{cellspace}
+
+% DEFINICOES, TEOREMAS, LEMAS, COROLARIOS
+\newtheorem{definition}{Definição}[section]
+\newtheorem{observation}{Observação}[section]
+\newtheorem{proposition}{Proposição}[section]
+\newtheorem{theorem}{Teorema}[section]
+\newtheorem{lemma}[theorem]{Lema}
+\newtheorem{corollary}{Corolário}[theorem]
+\newtheorem{method}{Método}[section]
+
+% PARA QUESTOES
+\newtheorem*{questao*}{Questão}
+
+% PARA DEMONSTRACOES
+\newenvironment{Proof}[1][Demonstração]
+  {\proof[#1]\rightskip=1cm}
+  {\endproof}
+
+% VETOR, PRIMEIRA E SEGUNDA DERIVADAS DE VETOR
+\newcommand{\vet}[1]{\bm #1}
+\newcommand{\dvet}[1]{\bm {\dot #1}}
+\newcommand{\ddvet}[1]{\bm {\ddot #1}}
+% VERSOR
+\newcommand{\versor}[1]{\hat{\vet #1}}
+% PRODUTO INTERNO
+\newcommand{\prodint}[2]{\left\langle #1, #2 \right\rangle}
+% NORMA
+\newcommand\norma[1]{\left\Vert #1 \right\Vert}
+
+% CONJUNTOS
+\newcommand{\R}{\mathbb{R}} % Reais
+\newcommand{\Complexos}{\mathbb{C}} % Complexos
+\newcommand\continuo{{\mathscr{C}}} % Espaços C^k
+
+% DERIVADA
+\newcommand{\der}[2]{\dfrac{d #1}{d #2}}
+% DERIVADA PARCIAL
+\newcommand{\derpar}[2]{\dfrac{\partial #1}{\partial #2}}
+
+% HAMILTONIANO
+\newcommand{\Ham}{{\cal H}}
+
+% ESPACAMENTO DE CELULAS
+\setlength\cellspacetoplimit{3pt}
+\setlength\cellspacebottomlimit{3pt}
+
+% RODAPE COM MARCACAO EM NUMERACAO ARABE
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+
+% BIBLIOGRAFIA
+\RequirePackage[backend=biber, style=abnt, ittitles, maxcitenames=1]{biblatex}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
