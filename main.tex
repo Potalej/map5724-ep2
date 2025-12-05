@@ -2,45 +2,597 @@
 
 % -------------- PACOTE GERAL -------------- %
 \usepackage{helper/helper}
-
-% -------------- CONFIGURACOES DA BIBLIOGRAFIA -------------- %
-\addbibresource{bibliografia.bib}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
 
 % -------------- TITULO E INFORMACOES -------------- %
-\title{Modelo para relatórios e afins}
-\author{pão}
-\date{12 de dezembro de 2023}
+\title{MAP5724 - Exercício-Programa 2}
+\author{Octavio Augusto Potalej - NUSP 12558676}
+\date{}
 
 % -------------- DOCUMENTO -------------- %
 \begin{document}
 \maketitle
 
-% Resumo / Abstract
-\input{secoes/resumo}
+\section*{Atividade 1 - Métodos explícitos}
+
+\begin{questao*}[1.1]
+    Utilizando a análise de estabilidade de von Neumann, determine a condição sobre $\Delta t$, $\Delta x$, $\Delta y$, $b_1$ e $b_2$ que garante a estabilidade deste método explícito.
+\end{questao*}
+
+A análise de estabilidade de von Neumann em duas dimensões se dá substituindo $v_{a, b}^n$ por $g^n \exp{\{i (a \theta_x + b \theta_y)\}}$, onde $\theta_x = \Delta x \xi_x$ e $\theta_y = \Delta y \xi_y$. Para facilitar a notação, considere $e_a = e^{i a \theta_x}$ e $e_b = e^{i b \theta_y}$.
+
+Substituindo no método de Euler explícito:
+$$
+g^{n+1} e_a e_b = g^n e_a e_b + \dfrac{b_1 \Delta t \ g^n e_a e_b}{(\Delta x)^2} (e^{i \theta_x} - 2 + e^{-i \theta_x}) + \dfrac{b_2 \Delta t \ g^n e_a e_b}{(\Delta y)^2} (e^{i \theta_y} - 2 + e^{-i \theta_y}).
+$$
+Dividindo ambos os lados por $g^n e_a e_b$:
+$$
+g = 1 + \dfrac{b_1 \Delta t}{(\Delta x)^2} (e^{i \theta_x} - 2 + e^{-i \theta_x}) + \dfrac{b_2 \Delta t}{(\Delta y)^2} (e^{i \theta_y} - 2 + e^{-i \theta_y}).
+$$
+Agora, veja que
+$$
+e^{i \omega} + e^{-i \omega} = 2 \cos \omega,
+$$
+então:
+$$
+g = 1 + \dfrac{2 b_1 \Delta t}{(\Delta x)^2} (\cos \theta_x - 1) + \dfrac{2 b_2 \Delta t}{(\Delta y)^2} (\cos \theta_y - 1).
+$$
+
+Queremos verificar sob quais condições temos $|g| \leq 1$. Observe que $g \leq 1$, pois $-2 \leq \cos \theta - 1 \leq 0$, para todo $\theta$. A condição deve ser imposta então pelo caso negativo. No pior caso, $\cos \theta = -1$, $\theta = \theta_x, \theta_y$, então queremos:
+$$
+g \geq 1 - \dfrac{4 b_1 \Delta t}{(\Delta x)^2} - \dfrac{4 b_2 \Delta t}{(\Delta y)^2} \geq -1 \iff \dfrac{b_1 \Delta t}{(\Delta x)^2} + \dfrac{b_2 \Delta t}{(\Delta y)^2} \leq 1/2.
+$$
+
+A condição de estabilidade para o tamanho de passo $\Delta t$ fica:
+$$
+\Delta t \leq \dfrac{(\Delta x)^2 (\Delta y)^2}{2 b_1 (\Delta y)^2 + 2 b_2(\Delta x)^2}.  
+$$
+Se a grade é simétrica e temos $h = \Delta x = \Delta y$, então o critério fica:
+$$
+\Delta t \leq \dfrac{h^2}{2(b_1 + b_2)}.
+$$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{questao*}[1.2]
+    Implemente computacionalmente o esquema explícito para resolver a Equação 1. Defina um domínio computacional, escolha valores adequados para $b_1$ e $b_2$, e estabeleça condições iniciais $u(0,x,y) = f(x,y)$ e condições de fronteira (e.g., Dirichlet homogêneas) apropriadas. Verifique empiricamente a condição de estabilidade obtida na Questão 1.1.
+\end{questao*}
+
+Implementei o método matricialmente. Os operadores de diferenças centradas de segunda ordem:
+\begin{lstlisting}[style=python]
+def A_x (v, delta_x:float):
+  vet = np.zeros_like(v)
+  vet[1:-1, 1:-1] = v[2:, 1:-1] - 2 * v[1:-1, 1:-1] + v[:-2, 1:-1]
+  return vet / (delta_x*delta_x)
+
+def A_y (v, delta_y:float):
+  vet = np.zeros_like(v)
+  vet[1:-1,1:-1] = v[1:-1, 2:] - 2 * v[1:-1, 1:-1] + v[1:-1, :-2]
+  return vet / (delta_y*delta_y)
+\end{lstlisting}
+e o método em si:
+\begin{lstlisting}[style=python]
+def ftcs (v0:np.array, delta_t:float, delta_x:float, delta_y:float, b_1:float, b_2:float, fronteira=0.0)->np.array:
+  # Aplicando os operadores de diferencas centradas
+  Ax_v0 = A_x(v0, delta_x)[1:-1,1:-1]
+  Ay_v0 = A_y(v0, delta_y)[1:-1,1:-1]
+
+  # Condicao de fronteira
+  v = np.zeros_like(v0) + fronteira
+  # Metodo ftcs
+  v[1:-1,1:-1] = v0[1:-1,1:-1] + delta_t * (b_1 * Ax_v0 + b_2 * Ay_v0)
+
+  return v
+\end{lstlisting}
+
+Escolhendo $b_1 = b_2 = 1/4$ e uma grade $50 \times 50$ (i.e. $h=1/50$), o critério de estabilidade fica:
+$$
+\Delta t \leq \dfrac{1}{2*(1/2) * 50^2} = \dfrac{1}{2500} = 4 \cdot 10^{-4}.
+$$
+A condição de fronteira escolhida foi $u(t, x_f, y_f) = 0$, $\forall (x_f, y_f) \in \partial ([0,1] \times [0,1])$, e a condição inicial será $u(0,x,y) = 1$, $\forall (x,y) \in (0,1) \times (0,1)$. O comportamento esperado nessas condições é uma dissipação isotrópica de fora para dentro.
+
+Escolhendo um tamanho de passo dentro do critério de estabilidade ($\Delta t = 4 \cdot 10^{-4}$), o resultado ficou dentro do esperado (figura \ref{fig:q1.2_1}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{programa/img/q1.2_estavel.png}
+    \caption{Teste com $\Delta t$ dentro do critério de estabilidade.}
+    \label{fig:q1.2_1}
+\end{figure}
+
+Agora utilizando um tamanho de passo ligeiramente acima do critério ($\Delta t= 4.1 \cdot 10^{-4}$), o resultado obtido se distancia rapidamente do resultado esperado (figura (\ref{fig:q1.2_2}), exibindo um comportamento instável.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{programa/img/q1.2_instavel.png}
+    \caption{Teste com $\Delta t$ ligeiramente fora do critério de estabilidade.}
+    \label{fig:q1.2_2}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
 \pagebreak
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Atividade 2 - Métodos implícitos}
 
-% Sumario
-\tableofcontents
+\textit{Considere agora o método de Euler implícito (BTCS - Backward-Time Central-Space}:
+$$
+v_{i,j}^{n+1} - \Delta t (b_1 A_x v_{i,j}^{n+1} + b_2 A_y v_{i,j}^{n+1}) = v_{i,j}^n
+$$
+
+\begin{questao*}[2.1]
+    Demonstre, utilizando a análise de von Neumann, que este método implícito é incondicionalmente estável para quaisquer $\Delta t > 0$.
+\end{questao*}
+
+Com a mesma notação da questão 1.1, tomando $v_{a,b}^n = g^n e_a e_b$ temos:
+$$
+g^{n+1} e_a e_b - \dfrac{b_1 \Delta t \ g^{n+1} e_a e_b}{(\Delta x)^2}(e^{i \theta_x} - 2 + e^{-i\theta_x}) - \dfrac{b_2 \Delta t \ g^{n+1} e_a e_b}{(\Delta y)^2} (e^{i \theta_y} - 2 + e^{- i \theta_y}) = g^n e_a e_b.
+$$
+Dividindo ambos os lados por $g^n e_a e_b$ e usando que $2 \cos \theta = e^{i \theta} + e^{-i\theta}$:
+$$
+g = \dfrac{1}{\left(1 - \dfrac{2 b_1 \Delta t}{(\Delta x)^2} (\cos \theta_x - 1) - \dfrac{2 b_2 \Delta t}{(\Delta y)^2} (\cos \theta_y - 1) \right)}.
+$$
+Observe que $-2 \leq \cos \theta - 1 \leq 0$, e como $b_1 > 0, \ b_2 > 0$ e $\Delta t > 0$, temos que
+$$
+-\dfrac{2 b_1 \Delta t}{(\Delta x)^2} (\cos \theta_x - 1) - \dfrac{2 b_2 \Delta t}{(\Delta y)^2} (\cos \theta_y - 1) > 0,
+$$
+então o lado direito atinge seu máximo quando $\cos \theta_x =1$ e $\cos \theta_y = 1$, resultando em $1$, e logo:
+$$
+0 < g \leq 1.
+$$
+Portanto, o método é incondicionalmente estável. $\qed$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{questao*}[2.2]
+Reescreva o esquema na forma matricial $\bm A \vet v^{n+1} = \vet v^n$, onde $\vet v^n$ é o vetor de todas as incógnitas $v_{i,j}^n$. Analise a estrutura da matriz de coeficientes $\bm A$ e discuta por que, embora esparsa, ela possui um acoplamento que torna sua resolução computacionalmente mais custosa do que a resolução de sistemas tridimensionais unidimensionais.
+\end{questao*}
+
+Para transformar a matriz de estados em um vetor $\vet v \in \R^{M \cdot N}$, é necessário escolher alguma ordenação. Por facilidade, considere a ordem lexicográfica:
+$$
+v_{i,j} = \vet v_\mu,
+\quad
+\mu = i + (j-1) M,
+\quad
+1 \leq i \leq M, \ 1 \leq j \leq N.
+$$
+Por exemplo: $(v_{1,1}, v_{2,1}, v_{1,2}, v_{2, 2}, v_{1,3}, v_{2,3})$. Com essa ordem, os operadores de diferenças finitas ficam:
+$$
+\bm A_x v_{i,j}
+= \bar{\bm A_x} \vec v_{i + (j-1)M}
+= \dfrac{\vec v_{i + 1 + (j - 1)M} - 2 \vec v_{i + (j-1)M} + \vec v_{i - 1 + (j-1)M}}{(\Delta x)^2},
+$$
+$$
+\bm A_y v_{i,j}
+= \bar{\bm A_y} \vec v_{i + (j-1)M}
+= \dfrac{\vec v_{i + j M} - 2 \vec v_{i + (j-1) M} + \vec v_{i + (j-2)M}}{(\Delta y)^2}.
+$$
+
+O operador $\bar{\bm A_x}$ utiliza pontos consecutivos, sendo portanto uma matriz tridiagonal com elementos tridiagonais $(1, -2, 1) / (\Delta x)^2$.
+
+Já o operador $\bar{\bm A_y}$ captura elementos distantes e tem um formato tridiagonal por blocos na forma:
+$$
+\bar{\bm A_y} = \dfrac{1}{(\Delta y)^2} \begin{bmatrix}
+- 2 I_M & I_M & 0_M & \cdots & 0_M \\
+I_M     & - 2 I_M & I_M & \ddots & \vdots \\
+0_M & I_M     & - 2 I_M & \ddots & 0_M \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+0_M & \cdots & 0_M & I_M & - 2 I_M
+\end{bmatrix}
+$$
+
+Com isso, o método BTCS toma a forma matricial:
+$$
+\bm I \vec v^{n+1} - \Delta t (b_1 \bar{\bm A_x} \vec v^{n+1} + b_2 \bar{\bm A_y} \vec v^{n+1}) = \vec v^{n}
+$$
+$$
+= (\bm I - \Delta t b_1 \bar{\bm A_x} - \Delta t b_2 \bar{\bm A_y}) \vec v^{n+1} = \vec v^{n}.
+$$
+
+A dificuldade de resolver esse tipo de sistema aparece dessa distância entre os termos dos blocos tridiagonais oriundos do operador $\bar{\bm A_y}$, gerando uma banda maior que 3. Isso eleva o custo da resolução do sistema linear.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
 \pagebreak
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Atividade 3 - O método ADI}
 
-% -------------- SECOES -------------- %
-% Introducao
-\input{secoes/introducao}
-\pagebreak 
+\begin{questao*}[3.1]
+    Demonstre que a equação de Crank-Nicolson
+    $$
+    \dfrac{\vet v^{n+1} - \vet v^n}{\Delta t} = \dfrac{1}{2} (\bm A_x \vet v^{n+1} + \bm A_x \vet v^n) + \dfrac{1}{2} (\bm A_y \vet v^{n+1} + \bm A_y \vet v^n)
+    $$
+    pode ser rearranjada para a forma (denotando $k=\Delta t$):
+    $$
+    \left(\bm I - \dfrac{k}{2} \bm A_x - \dfrac{k}{2} \bm A_y\right) \vet v^{n+1}
+    = \left(\bm I + \dfrac{k}{2} \bm A_x + \dfrac{k}{2} \bm A_y\right) \vet v^{n} + O(k^3).
+    $$
+\end{questao*}
 
-% Secao de exemplo
-\part{Início}
-\section{Teste}
-oie \cite{Volchan:2007}.
-\begin{equation}
-    \prodint{u}{v}
+Sendo $t_{n+1} = t_n + \Delta t = t_n + k$, podemos expandir $v^{n+1}$ em Taylor em relação ao tempo (supondo suavidade suficiente):
+$$
+\vet v^{n+1} = \vet v^n + k \vet v_t^n + \dfrac{1}{2} k^2 \vet v_{tt}^n + O(k^3).
+$$
+Por simplicidade, foi tomado que $b_1 = b_2 = 1$ no enunciado de Crank-Nicolson. Então, considerando a equação original que se está resolvendo numericamente
+$$
+u_t = u_{xx} + u_{yy},
+$$
+temos que:
+$$
+\vet v_t^n = (\bm A_x + \bm A_y)\vet v^n.
+$$
+A derivada temporal de segunda ordem por sua vez consiste simplesmente de uma composição:
+$$
+\vet v_{tt}^n = (\vet v_t^n)_t = (\bm A_x + \bm A_y)\vet v_t^n = (\bm A_x + \bm A_y)^2 \vet v^n.
+$$
+
+Para facilitar a notação, seja $\bm D = \bm A_x + \bm A_y$. Com tudo isso, temos então:
+\begin{align*}
+    \left(\bm I - \frac{k}{2}\bm D\right) \vet v^{n+1}
+    &= \left(\bm I - \frac{k}{2}\bm D \right) \left(\bm I + k \bm D + \dfrac{k^2}{2} \bm D^2 + O(k^3)\right) \vet v^n \\
+    &= \left(\bm I + k \bm D + \cancel{\dfrac{k^2}{2} \bm D^2} - \dfrac{k}{2} \bm D - \cancel{\dfrac{k^2}{2} \bm D^2} - \underbrace{\dfrac{k^3}{4} \bm D^3}_{O(k^3)} \right) \vet v^n + O(k^3) \\
+    &= \left(\bm I + \dfrac{k}{2} \bm D\right) \vet v^n + O(k^3). \qed
+\end{align*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{questao*}[3.2]
+    Prove que o termo $\dfrac{k^2}{4} \bm A_x \bm A_y (\vet v^{n+1} - \vet v^n)$ é de ordem $O(k^3)$ (assumindo suavidade suficiente da solução $u$). \textit{Dica: Note que $v^{n+1} - v^n = O(k)$}.
+    
+    Conclua que, ao mover os termos de $O(k^3)$ para o lado direito, a equação
+    \begin{align}\label{eq:questao3.2-crank-nicolson-perturbado}
+        \left(\bm I - \frac{k}{2} \bm D + \dfrac{k^2}{4} \bm A_x \bm A_y\right)\vet v^{n+1} - \dfrac{k^2}{4} \bm A_x \bm A_y \vet v^{n+1} = \nonumber \\
+        \left(\bm I + \frac{k}{2} \bm D + \dfrac{k^2}{4} \bm A_x \bm A_y\right)\vet v^n - \dfrac{k^2}{4} \bm A_x \bm A_y \vet v^n + O(k^3)
+    \end{align}
+    pode ser reescrita como
+    $$
+    \left(\bm I - \frac{k}{2} \bm A_x\right)\left(\bm I - \frac{k}{2} \bm A_y\right) \vet v^{n+1} = \left(\bm I + \frac{k}{2} \bm A_x\right)\left(\bm I + \frac{k}{2} \bm A_y\right) \vet v^n + O(k^3).
+    $$
+\end{questao*}
+
+Primeiro, observe que, por Taylor (supondo suavidade suficiente):
+$$
+\vet v^{n+1} = \vet v^n + O(k) \Longrightarrow  \vet v^{n+1} - \vet v^n = O(k),
+$$
+então:
+$$
+\dfrac{k^2}{4} \bm A_x \bm A_y (\vet v^{n+1} - \vet v^{n}) = \dfrac{k^2}{4} \bm A_x \bm A_y O(k) = O(k^3).
+$$
+
+Substituindo na equação (\ref{eq:questao3.2-crank-nicolson-perturbado}), temos:
+\begin{align}\label{eq:questao3.2-meio}
+\left(\bm I - \frac{k}{2} \bm D + \dfrac{k^2}{4} \bm A_x \bm A_y\right)\vet v^{n+1} &=
+\left(\bm I + \frac{k}{2} \bm D + \dfrac{k^2}{4} \bm A_x \bm A_y\right)\vet v^n + \dfrac{k^2}{4} \bm A_x \bm A_y (\vet v^{n+1} -  \vet v^n) + O(k^3) \nonumber \\
+&= \left(\bm I + \frac{k}{2} \bm D + \dfrac{k^2}{4} \bm A_x \bm A_y\right)\vet v^n + O(k^3).
+\end{align}
+
+O restante consiste em manipulação algébrica. Veja que:
+\begin{align}\label{eq:questao3.2-soma-menos}
+\bm I - \dfrac{k}{2} \bm D + \dfrac{k^2}{4} \bm A_x \bm A_y
+&= \bm I - \dfrac{k}{2} \bm A_x - \dfrac{k}{2} \bm A_y + \dfrac{k^2}{4} \bm A_x \bm A_y \nonumber \\
+&= \bm I \left(\bm I - \dfrac{k}{2} \bm A_y\right) - \dfrac{k}{2} \bm A_x \left( \bm I - \dfrac{k}{2} \bm A_y \right) \nonumber \\
+&= \left(\bm I - \dfrac{k}{2} \bm A_x\right) \left( \bm I - \dfrac{k}{2} \bm A_y \right).
+\end{align}
+Analogamente, obtém-se que
+\begin{equation}\label{eq:questao3.2-soma-mais}
+\bm I + \dfrac{k}{2} \bm D + \dfrac{k^2}{4} \bm A_x \bm A_y = \left(\bm I + \dfrac{k}{2} \bm A_x\right) \left( \bm I + \dfrac{k}{2} \bm A_y \right).
 \end{equation}
 
-% capitulo 1
-\input{secoes/cap1}
-\pagebreak 
+Substituindo (\ref{eq:questao3.2-soma-menos}) e (\ref{eq:questao3.2-soma-mais}) em (\ref{eq:questao3.2-meio}), temos:
+$$
+\left(\bm I - \frac{k}{2} \bm A_x\right)\left(\bm I - \frac{k}{2} \bm A_y\right) \vet v^{n+1} = \left(\bm I + \frac{k}{2} \bm A_x\right)\left(\bm I + \frac{k}{2} \bm A_y\right) \vet v^n + O(k^3). \quad \qed
+$$
 
-% -------------- BIBLIOGRAFIA -------------- %
-\printbibliography
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
+\pagebreak
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Atividade 4 - Estudo de caso}
+
+\begin{questao*}[4.1 - Análise Teórica da Estabilidade]
+    Demonstrem formalmente, utilizando a análise de estabilidade de von Neumann, que ambos os esquemas - Peaceman-Rachford e Douglas-Rachford - são incondicionalmente estáveis.
+\end{questao*}
+
+\begin{itemize}
+    \item Começando por Peaceman-Rachford, dado pelo seguinte:
+    \begin{equation}\label{eq:questao4.1-peaceman-rachford}
+        \left(\bm I - \dfrac{k}{2} \bm A_x \right) \vet v^* = \left(\bm I + \dfrac{k}{2} \bm A_y \right) \vet v^n,
+        \quad
+        \left(\bm I - \dfrac{k}{2} \bm A_y \right) \vet v^{n+1} = \left(\bm I + \dfrac{k}{2} \bm A_x \right) \vet v^*,
+    \end{equation}
+    onde $\vet v^* = \vet v^{n + 1/2}$. Considere a notação
+    $$
+    r_x = \dfrac{k}{(\Delta x)^2}(\cos \theta_x - 1), \quad
+    r_y = \dfrac{k}{(\Delta y)^2}(\cos \theta_y - 1).
+    $$
+    De antemão, como $\cos \theta - 1 \in [-2,0]$, temos que $r_x \leq 0$ e $r_y \leq 0$ para $k > 0$.
+    
+    Podemos reescrever a primeira parte do esquema (\ref{eq:questao4.1-peaceman-rachford}) como:
+    \begin{align*}
+        \left(\bm I - \dfrac{k}{2} \bm A_x \right) \vet v^* &= g^{n+1/2} e_a e_b (1 - r_x), \\
+        \left(\bm I + \dfrac{k}{2} \bm A_y \right) \vet v^n &= g^{n} e_a e_b (1 + r_y).
+    \end{align*}
+    Juntando os dois e dividindo ambos os lados por $g^n e_a e_b$, obtemos:
+    \begin{equation}\label{eq:questao4.1-parte1}
+        g^{1/2} = \dfrac{1 + r_y}{1 - r_x}.
+    \end{equation}
+    
+    Para a segunda parte de (\ref{eq:questao4.1-peaceman-rachford}) temos:
+    \begin{align*}
+        \left(\bm I - \dfrac{k}{2} \bm A_y \right) \vet v^{n+1} &= g^{n+1} e_a e_b (1 - r_y), \\
+        \left(\bm I + \dfrac{k}{2} \bm A_x \right) \vet v^* &= g^{n+1/2} e_a e_b (1 + r_x).
+    \end{align*}
+    Juntando as equações e dividindo ambos os lados por $g^n e_a e_b$:
+    \begin{equation}\label{eq:questao4.1-parte2}
+        g^{1/2} = \dfrac{1 + r_x}{1 - r_y}.
+    \end{equation}
+    
+    Multiplicando (\ref{eq:questao4.1-parte1}) e (\ref{eq:questao4.1-parte2}), temos:
+    $$
+    g = \dfrac{1 + r_x}{1 - r_x} \dfrac{1 + r_y}{1 - r_y}.
+    $$
+    Como $r_x, r_y \leq 0$, então
+    $$
+    |g| = \left|\dfrac{1 + r_x}{1 - r_x}\right| \left|\dfrac{1 + r_y}{1 - r_y}\right| \leq 1,
+    $$
+    pois $|1 + r_{\cdot}| \leq |1 - r_\cdot|$. Portanto o esquema de Peaceman-Rachford é incondicionalmente estável. $\qed$
+
+    \item Para o esquema de Douglas-Rachford, dado por
+    \begin{equation}\label{eq:questao4.1-douglas-rachford}
+        (\bm I - k \bm A_x) \vet v^* = (\bm I + k \bm A_y) \vet v^n,
+        \quad
+        (\bm I - k \bm A_y) \vet v^{n+1} = \vet v^* - k \bm A_y \vet v^n,
+    \end{equation}
+    o processo é análogo. Da primeira parte de (\ref{eq:questao4.1-douglas-rachford}) temos:
+    \begin{align*}
+        (\bm I - k \bm A_x) v_{a,b}^* &= g^{n+1/2} e_a e_b (1 - 2 r_x), \\
+        (\bm I + k \bm A_y) v_{a,b}^n &= g^n e_a e_b (1 + 2 r_y).
+    \end{align*}
+    Juntando as equações e dividindo por $g^n e_a e_b$:
+    \begin{equation}\label{eq:questao4.1-dr-parte1}
+        g^{1/2} = \dfrac{1 + 2 r_y}{1 - 2 r_x}.
+    \end{equation}
+
+    Para a segunda parte de (\ref{eq:questao4.1-douglas-rachford}) temos:
+    \begin{align*}
+        (\bm I - k \bm A_y) v_{a,b}^{n+1} &= g^{n+1} e_a e_b (1 - 2 r_y), \\
+        v_{a,b}^n - k \bm A_y v_{a,b}^n &= g^{n+1/2} e_a e_b - 2 g^n e_a e_b r_y.
+    \end{align*}
+    Juntando as equações e dividindo ambos os lados por $g^n e_a e_b$:
+    \begin{equation}\label{eq:questao4.1-dr-parte2}
+        g = \dfrac{g^{1/2} - 2 r_y}{1-2r_y}.
+    \end{equation}
+    Substituindo (\ref{eq:questao4.1-dr-parte1}) em (\ref{eq:questao4.1-dr-parte2}):
+    \begin{equation}
+        g = \dfrac{1}{1 - 2 r_y} \dfrac{1 + 2 r_y - 2 r_y (1 - 2 r_x)}{1 - 2 r_x}
+        = \dfrac{1 + 4 r_x r_y}{1 + 4 r_x r_y - 2 (r_x + r_y)}.
+    \end{equation}
+    Observe que $r_x r_y \geq 0$ e que $r_x + r_y \leq 0$. Dessa forma, $0 \leq g \leq 1$, então $|g|\leq 1$. Portanto, o esquema de Douglas-Rachford é incondicionalmente estável. $\qed$
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{questao*}[4.2 - Implementação e visualização]
+    Implementem computacionalmente ambos os esquemas (PR e DR) para resolver o problema modelo definido acima. Utilizem um algoritmo eficiente (e.g. Algoritmo de Thomas) para a inversão dos sistemas tridiagonais em cada estágio. Gerem uma visualização (e.g., um mapa de calor ou gráfico de superfície) da solução numérica $v_{i,j}^n$ e do erro absoluto $|u_e - v|$ em um tempo $t = T$ (ex., $T=0.5$).
+\end{questao*}
+
+Apesar da possibilidade de incorporar o algoritmo de Thomas nos métodos PR e DR e poupar alguma memória, fiz funções separadas para facilitar a legibilidade. Além disso, para melhorar um pouco o tempo do programa (especialmente na questão 4.3), usei o decorador \verb|@jit| do pacote Numba, que compila o código Python decorado e acelera um pouco as coisas.
+
+\pagebreak
+
+\begin{lstlisting}[style=python, title={Algoritmo de Thomas}]
+def thomas (a:float, b:float, c:float, d:np.array)->np.array:
+  """
+    Algoritmo de Thomas para resolucao de 
+    sistemas tridiagonais.
+  """
+  x = np.zeros_like(d)
+  n = len(d)
+  x[-1] = d[-1]
+
+  c_ = np.zeros(n-1)
+  c_[0] = c / b
+  d[0] = d[0] / b
+
+  for i in range(1, n):
+    if i < n - 1: c_[i] = c / (b - c_[i-1] * a)
+    d[i] = (d[i] - d[i-1] * a) / (b - c_[i-1] * a)
+
+  x[-1] = d[-1]
+  for i in range(n-2, -1, -1):
+    x[i] = d[i] - c_[i] * x[i+1]
+
+  return x
+\end{lstlisting}
+
+\begin{lstlisting}[style=python, title={Método de Peaceman-Rachford}]
+def metodo_pr (v:np.array, delta_t:float, delta_x:float, delta_y:float, b_1:float, b_2:float)->np.array:
+  """
+  Integracao numerica da equacao do calor usando o metodo Peaceman-Rachford.
+  """
+  M, N = v.shape
+
+  # Constantes
+  mu_x = delta_t / (delta_x**2)
+  mu_y = delta_t / (delta_y**2)
+
+  # Vetor de estados intermediario
+  v_tilde = np.copy(v)
+
+  # Primeiro fazemos a integracao em x a partir de v
+  # Termos das diagonais principal e secundarias
+  diag_pri = 1. + b_1 * mu_x
+  diag_sec = -.5 * b_1 * mu_x
+
+  # Integracao
+  for b in range(1, N-1):
+    lado_direito = v[1:-1,b] + 0.5 * b_2 * mu_y * (v[1:-1,b-1] - 2 * v[1:-1,b] + v[1:-1,b+1])
+    v_tilde[1:-1,b] = thomas(diag_sec, diag_pri, diag_sec, lado_direito)
+  
+  # Agora fazemos a integracao em y a partir de v_tilde
+  # Termos das diagonais principal e secundarias
+  diag_pri = 1. + b_2 * mu_y
+  diag_sec = -.5 * b_2 * mu_y
+
+  # Integracao
+  for a in range(1, M-1):
+    lado_direito = v_tilde[a,1:-1] + 0.5 * b_1 * mu_x * (v_tilde[a-1,1:-1] - 2 * v_tilde[a,1:-1] + v_tilde[a+1,1:-1])
+    v[a,1:-1] = thomas(diag_sec, diag_pri, diag_sec, lado_direito)
+  
+  return v
+\end{lstlisting}
+
+\begin{lstlisting}[style=python, title={Método de Douglas-Rachford}]
+def metodo_dr (v:np.array, delta_t:float, delta_x:float, delta_y:float, b_1:float, b_2:float)->np.array:
+  """
+  Integracao numerica da equacao do calor usando o metodo Douglas-Rachford.
+  """
+  M, N = v.shape
+
+  # Constantes
+  mu_x = delta_t / (delta_x**2)
+  mu_y = delta_t / (delta_y**2)
+
+  # Vetor de estados intermediario
+  v_tilde = np.zeros((M,N))
+
+  # Primeiro fazemos a integracao em y a partir de v
+  # Termos das diagonais principal e secundarias
+  diag_pri = 1. + 2. * b_1 * mu_x
+  diag_sec = - b_1 * mu_x
+  # Integracao
+  for b in range(1, N-1):
+    lado_direito = v[1:-1,b] + b_2 * mu_y * (v[1:-1,b-1] - 2 * v[1:-1,b] + v[1:-1,b+1])
+    v_tilde[1:-1,b] = thomas(diag_sec, diag_pri, diag_sec, lado_direito)
+  
+  # Agora fazemos a integracao em x a partir de v_tilde
+  # Termos das diagonais principal e secundarias
+  diag_pri = 1. + 2. * b_2 * mu_y
+  diag_sec = -b_2 * mu_y
+  v_prox = np.zeros((M,N))
+
+  # Integracao
+  for a in range(1, M-1):
+    lado_direito = v_tilde[a,1:-1] - b_2 * mu_y * (v[a,0:-2] - 2.*v[a,1:-1] + v[a,2:])
+    v_prox[a, 1:-1] = thomas(diag_sec, diag_pri, diag_sec, lado_direito)
+  
+  return v_prox
+\end{lstlisting}
+
+O problema modelo foi resolvido uasndo um tamanho de passo temporal fixo $\Delta t = 0.005$ e uma grade $50 \times 50$. Usando o método de Peaceman-Rachford, temos os resultados nas figuras \ref{fig:q4.2_pr} e \ref{fig:q4.2_pr_erro}. No Peaceman-Rachford tivemos um erro crescente mas limitado por $10^{-4}$.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{programa/img/q4.2_PR.png}
+    \caption{Solução aproximada via Peaceman-Rachford.}
+    \label{fig:q4.2_pr}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{programa/img/q4.2_PR_erro.png}
+    \caption{Erro absoluto do Peaceman-Rachford. Escala de cores entre 0 e $10^{-4}$.}
+    \label{fig:q4.2_pr_erro}
+\end{figure}
+
+Já com o Douglas-Rachford temos as figuras \ref{fig:q4.2_dr} e \ref{fig:q4.2_dr_erro}. Dessa vez, o erro foi limitado por $0.003$, maior que o de Peaceman-Rachford.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{programa/img/q4.2_DR.png}
+    \caption{Solução aproximada via Douglas-Rachford.}
+    \label{fig:q4.2_dr}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{programa/img/q4.2_DR_erro.png}
+    \caption{Erro absoluto do Douglas-Rachford. Escala de cores entre 0 e $0.003$.}
+    \label{fig:q4.2_dr_erro}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{questao*}[4.3 - Estudo Numérico da Ordem de Consistência]
+    O ponto central desta investigação é verificar se a convergência numérica observada condiz com a consistência teórica dos métodos.
+    \begin{itemize}
+        \item Definam um tempo final $T$ (e.g., $T=0.5$).
+        \item Para um refinamento $N$, definam $\Delta x = \Delta y = h = \pi / N$.
+        \item Sigam a diretriz $\Delta t = \Delta x = \Delta y$, ou seja, $k = h$.
+        \item Calculem o erro global no tempo $T$ usando a norma do máximo (erro $L_{\infty}$):
+        $$
+            E(h) = \max_{i,j} |u_e(T, x_i, y_j) - v_{i,j}^{N_t}|,
+            \quad (\text{onde } N_t h = T).
+        $$
+        \item Construam uma tabela para cada método (PR e DR) contendo $h$, o erro $E(h)$ e a taxa de convergência $p$ (calculada por $p \approx \log_2{(E(2h)/E(h))}$) Utilizem uma série de refinamentos (e.g., $N=10, 20, 40, 80$).
+    \end{itemize}
+\end{questao*}
+
+Utilizando $N=10, 20, 40, 80$, tive o seguinte:
+
+\begin{table}[!htb]
+    \caption{Erro e convergência estimada de PR e DR com $\Delta t = h$}
+    \begin{minipage}{.5\linewidth}
+        \caption{Peaceman-Rachford}
+        \centering
+        \input{programa/latex/tabela_pr.txt}
+    \end{minipage}%
+    \begin{minipage}{.5\linewidth}
+        \centering
+        \caption{Douglas-Rachford}
+        \input{programa/latex/tabela_dr.txt}
+    \end{minipage} 
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\separador
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{questao*}[4.4 - Discussão]
+    Analisem os resultados. A taxa de convergência $p$ observada para $k=h$ é consistente com as ordens de truncamento teóricas? Discutam qualquer discrepância ou confirmação.
+\end{questao*}
+
+No método Peaceman-Rachford o obtido foi uma superconvergência. Conforme o enunciado, o esperado seria algo de ordem $O(k^3) = O(h^3)$, mas encontramos $O(h^4)$! Uma possível razão para isso pode ser o problema modelo compensar alguns termos de ordem menor quando usamos $\Delta t = h$, fazendo sobrar os de ordem 4 e acima. O uso de outros valores de $\Delta t$ traz resultados diferentes, como veremos.
+
+Já o Douglas-Rachford teve ordem 1. Conforme o enunciado, é esperado que DR tenha ordem temporal menor, mas não foi dito qual ordem. A suspeita é que seja $O(k)$.
+
+Para verificar a validade desses resultados, decidi rodar mais dois testes. No primeiro, fixei $\Delta t = 10^{-4}$ e usei os mesmos valores de $M$, conforme a tabela \ref{tab:adi_dt_fixo}. Dessa vez, o método Peaceman-Rachford apresentou ordem 2 e Douglas-Rachford começou com ordem 2 mas decresceu. O comportamento de DR reforça a ordem 1 obtida no caso $\Delta t = h$, pois conforme $h$ diminuiu e se aproximou do $\Delta t$ fixo, a ordem diminuiu.
+
+\begin{table}[H]
+    \caption{Erro e convergência estimada de PR e DR com $\Delta t = 10^{-4}$}
+    \label{tab:adi_dt_fixo}
+    \begin{minipage}{.5\linewidth}
+        \caption{Peaceman-Rachford}
+        \centering
+        \input{programa/latex/tabela_pr_fixo.txt}
+    \end{minipage}%
+    \begin{minipage}{.5\linewidth}
+        \centering
+        \caption{Douglas-Rachford}
+        \input{programa/latex/tabela_dr_fixo.txt}
+    \end{minipage} 
+\end{table}
+
+No segundo teste decidi usar $\Delta t = h^2$, para cada valor de $h$. Se DR realmente tem ordem temporal $O(k)$, o esperado nesse caso é que a ordem suba para 2, alcançando a ordem espacial. De fato, foi o que obtive, conforme a tabela \ref{tab:adi_dt_h2}.
+\begin{table}[H]
+    \caption{Erro e convergência estimada de PR e DR com $\Delta t = h^2$}
+    \label{tab:adi_dt_h2}
+    \begin{minipage}{.5\linewidth}
+        \caption{Peaceman-Rachford}
+        \centering
+        \input{programa/latex/tabela_pr_h2.txt}
+    \end{minipage}%
+    \begin{minipage}{.5\linewidth}
+        \centering
+        \caption{Douglas-Rachford}
+        \input{programa/latex/tabela_dr_h2.txt}
+    \end{minipage} 
+\end{table}
+
+Dessa forma, foi possível verificar ordem $O(h^4)$ para o método Peaceman-Rachford usando $k=h$ e também foi possível inferir a ordem $O(k)$ do método Douglas-Rachford.
 
 \end{document}

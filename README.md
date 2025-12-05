@@ -1,9 +1,15 @@
-# latex-template 📚
-Template de LaTeX que eu gosto.
+# MAP5724 - EP 2 - Método ADI para EDPs Parabólicas
 
-Para compilar, basta rodar na raiz:
-```
-make TEX=main
+Repositório para guardar o relatório e o programa.
+
+Para compilar o relatório, é só rodar
+
+```bash
+make
 ```
 
-O motor utilizado para compilação da biblioteca é o Biber, pois o BibLaTeX não tem compatibilidade com o estilo ABNT.
+Para rodar os programas, primeiro instale os pacotes
+```bash
+python -m pip install -r requirements.txt
+```
+e aí é só ir rodando os scripts das questões.

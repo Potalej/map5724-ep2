@@ -1,10 +1,10 @@
 # Makefile para compilar LaTeX com temporarios no build/
 # Usa XeLaTeX
 # Exemplo:
-# make TEX=main
+# make ARQUIVO=main
 
-# Nome do arquivo TEX passado pelo terminal
-TEX ?= main
+# Nome do arquivo ARQUIVO passado pelo terminal
+ARQUIVO ?= main
 
 # Pasta para arquivos temporários
 BUILD_DIR := build
@@ -12,17 +12,17 @@ BUILD_DIR := build
 # Cria a pasta build se não existir
 $(shell mkdir -p $(BUILD_DIR))
 
-PDF := $(TEX).pdf
+PDF := $(ARQUIVO).pdf
 
 all:
-	@echo "Compilando $(TEX).tex..."
-	-@xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) -aux-directory=$(BUILD_DIR) -include-directory=. $(TEX).tex
-	-@if grep -q "Package biblatex" $(BUILD_DIR)/$(TEX).log 2>/dev/null; then \
+	@echo "Compilando $(ARQUIVO).tex..."
+	-@xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) -aux-directory=$(BUILD_DIR) -include-directory=. $(ARQUIVO).tex
+	-@if grep -q "Package biblatex" $(BUILD_DIR)/$(ARQUIVO).log 2>/dev/null; then \
 		echo "Rodando biber..."; \
-		biber $(BUILD_DIR)/$(TEX); \
+		biber $(BUILD_DIR)/$(ARQUIVO); \
 	fi
-	-@xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) $(TEX).tex
-	-@xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) $(TEX).tex
+	-@xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) $(ARQUIVO).tex
+	-@xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) $(ARQUIVO).tex
 	@echo "Movendo PDF para pasta principal..."
 	@cp $(BUILD_DIR)/$(PDF) ./
 

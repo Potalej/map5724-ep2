@@ -23,6 +23,17 @@
 \RequirePackage{textcomp}
 \RequirePackage{listings}
 \RequirePackage{minted}
+% Estilo Listings para codigo em python
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  showstringspaces=false,
+  frame=single,
+  breaklines=true
+}
 
 % Pacotes necessarios e definicioes preliminares
 \RequirePackage{bm} % 'Bold" em equacoes
@@ -45,6 +56,8 @@
 
 % PARA QUESTOES
 \newtheorem*{questao*}{Questão}
+% Separador
+\newcommand{\separador}{\vspace{0.5cm}\noindent\makebox[\linewidth]{\rule{0.4\linewidth}{0.4pt} ==/== \rule{0.4\linewidth}{0.4pt}}\vspace{0.5cm}}
 
 % PARA DEMONSTRACOES
 \newenvironment{Proof}[1][Demonstração]
