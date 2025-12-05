@@ -14,3 +14,5 @@ Os outros arquivos tem nomes autoexplicativos. As imagens geradas são salvadas 
 será criada se ainda não existir). Nos scripts das questões 4.3 e 4.4 também é criada uma pasta
 "latex" onde as tabelas geradas são salvadas em LaTeX. Fiz assim para poder importar diretamente
 no relatório. De toda forma, as tabelas nessas questões são printadas na tela também.
+
+Esse código também está em um repositório público: https://github.com/potalej/map5724-ep2.
