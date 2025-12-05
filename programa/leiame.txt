@@ -1,0 +1,16 @@
+Oi!
+
+Usei algumas bibliotecas. Roda
+```
+python -m pip install -r requirements.txt
+```
+que elas serão instaladas se ainda não tiver.
+
+O script "helpers.py" tem uma função para plotar os mapas de calor e outra para rodar os métodos.
+Essa segunda é basicamente a que vai chamando o método até que t = T e salva a quantidade de 
+checkpoints que for passada.
+
+Os outros arquivos tem nomes autoexplicativos. As imagens geradas são salvadas na pasta "img" (que 
+será criada se ainda não existir). Nos scripts das questões 4.3 e 4.4 também é criada uma pasta
+"latex" onde as tabelas geradas são salvadas em LaTeX. Fiz assim para poder importar diretamente
+no relatório. De toda forma, as tabelas nessas questões são printadas na tela também.
